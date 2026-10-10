@@ -1,0 +1,5 @@
+chess.js 1.4.0
+https://github.com/jhlywa/chess.js
+
+Stockfish.js 19.0.1, lite single-threaded build
+https://github.com/nmrugg/stockfish.js/tree/v19.0.1

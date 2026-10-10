@@ -1,0 +1,25 @@
+{
+    "id":  "./",
+    "short_name":  "Knightlab",
+    "background_color":  "#191b18",
+    "icons":  [
+                  {
+                      "purpose":  "any maskable",
+                      "type":  "image/png",
+                      "sizes":  "192x192",
+                      "src":  "icon-192.png"
+                  },
+                  {
+                      "purpose":  "any maskable",
+                      "type":  "image/png",
+                      "sizes":  "512x512",
+                      "src":  "icon-512.png"
+                  }
+              ],
+    "description":  "Play, analyze, and learn chess offline.",
+    "theme_color":  "#191b18",
+    "display":  "standalone",
+    "name":  "Knightlab — Offline Chess Coach",
+    "scope":  "./",
+    "start_url":  "./"
+}
