@@ -53,6 +53,8 @@ let selected = null;
 let hint = null;
 let resigned = null;
 let mode = "computer";
+let skill = 10;
+let draggedSquare = null;
 
 function notice(message = "") {
   $("notice").textContent = message;
@@ -191,9 +193,10 @@ function material(position, color) {
 }
 
 function brilliantCandidate(before, text, best, played) {
+  const perspective = new Chess(before).turn() === "w" ? 1 : -1;
   if (text !== best.best || !best.second) return false;
-  if (scoreNumber(best) - scoreNumber(best.second) < 150) return false;
-  if (scoreNumber(played) < 0 || played.pv.length < 2) return false;
+  if ((scoreNumber(best) - scoreNumber(best.second)) * perspective < 150) return false;
+  if (scoreNumber(played) * perspective < 0 || played.pv.length < 2) return false;
 
   const position = new Chess(before);
   const color = position.turn();
@@ -208,7 +211,8 @@ function brilliantCandidate(before, text, best, played) {
 }
 
 function classify(before, text, best, played) {
-  const loss = Math.max(0, scoreNumber(best) - scoreNumber(played));
+  const perspective = new Chess(before).turn() === "w" ? 1 : -1;
+  const loss = Math.max(0, (scoreNumber(best) - scoreNumber(played)) * perspective);
   const bookNames = book.get(key(before))?.get(text);
 
   if (bookNames) {
@@ -231,7 +235,7 @@ function classify(before, text, best, played) {
 function writeSave(announce = false) {
   try {
     localStorage.setItem(STORAGE, JSON.stringify({
-      version: 1, records, flipped, mode, resigned,
+      version: 1, records, flipped, mode, resigned, skill,
     }));
     if (announce) notice("Game saved on this device.");
   } catch {
@@ -264,6 +268,8 @@ function restore() {
     cursor = records.length;
     flipped = Boolean(saved.flipped);
     mode = saved.mode === "local" ? "local" : "computer";
+    skill = Number.isInteger(saved.skill) && saved.skill >= 0 && saved.skill <= 20
+      ? saved.skill : 10;
     resigned = ["w", "b"].includes(saved.resigned) ? saved.resigned : null;
   } catch {
     notice("The saved game could not be restored. A new board is ready.");
@@ -345,6 +351,10 @@ function renderBoard() {
         + (hint?.destination === square ? " hint" : "");
 
       button.dataset.square = square;
+      button.draggable = Boolean(piece && !busy && !resigned
+        && !position.isGameOver() && cursor === records.length
+        && (mode === "local" || game.turn() === "w")
+        && piece.color === game.turn());
       button.setAttribute("aria-label", square + (piece
         ? ` ${piece.color === "w" ? "White" : "Black"} ${pieceNames[piece.type]}`
         : " empty"));
@@ -365,6 +375,40 @@ function renderBoard() {
       }
 
       button.onclick = () => chooseSquare(square);
+      button.ondragstart = event => {
+        if (!button.draggable) {
+          event.preventDefault();
+          return;
+        }
+        draggedSquare = square;
+        selected = square;
+        clearHint();
+        event.dataTransfer.effectAllowed = "move";
+        event.dataTransfer.setData("text/plain", square);
+        button.classList.add("selected");
+      };
+      button.ondragover = event => {
+        if (draggedSquare) {
+          event.preventDefault();
+          event.dataTransfer.dropEffect = "move";
+        }
+      };
+      button.ondrop = event => {
+        event.preventDefault();
+        const from = draggedSquare || event.dataTransfer.getData("text/plain");
+        draggedSquare = null;
+        if (from && from !== square) {
+          selected = from;
+          chooseSquare(square);
+        }
+      };
+      button.ondragend = () => {
+        if (draggedSquare) {
+          selected = null;
+          button.classList.remove("selected");
+        }
+        draggedSquare = null;
+      };
       board.append(button);
     }
   }
@@ -437,6 +481,7 @@ function render() {
   $("state").textContent = (live ? "" : "Review · ") + status;
   $("ply").textContent = `${cursor} / ${records.length} ply`;
   $("mode").value = mode;
+  $("skill").value = String(skill);
   $("engineState").textContent = busy ? "Analyzing…" : "Local engine";
 
   const opening = records.slice(0, cursor).reverse()
@@ -448,7 +493,7 @@ function render() {
   $("topName").textContent = flipped ? whiteName : blackName;
   $("bottomName").textContent = flipped ? blackName : whiteName;
 
-  for (const id of ["new", "undo", "resign", "mode", "resume"]) {
+  for (const id of ["new", "undo", "resign", "mode", "skill", "resume"]) {
     $(id).disabled = busy;
   }
   $("undo").disabled = busy || records.length === 0;
@@ -556,10 +601,10 @@ async function play(text) {
 
   let analysisSucceeded = false;
   try {
-    const best = await engine.analyze(previousMoves);
+    const best = await engine.analyze(previousMoves, null, skill);
     const played = text === best.best
       ? best
-      : await engine.analyze(previousMoves, text);
+      : await engine.analyze(previousMoves, text, skill);
 
     record.best = best;
     record.played = played;
@@ -588,7 +633,7 @@ async function computerMove() {
 
   let choice;
   try {
-    choice = await engine.analyze(records.map(record => record.uci));
+    choice = await engine.analyze(records.map(record => record.uci), null, skill);
   } catch (error) {
     notice(error.message);
   } finally {
@@ -610,7 +655,7 @@ async function showHint(type) {
 
   try {
     const analysis = await engine.analyze(
-      records.slice(0, cursor).map(record => record.uci)
+      records.slice(0, cursor).map(record => record.uci), null, skill
     );
 
     hint = {
@@ -686,6 +731,12 @@ $("mode").onchange = async event => {
   writeSave();
   render();
   await computerMove();
+};
+
+$("skill").onchange = event => {
+  skill = Number(event.target.value);
+  writeSave();
+  notice(`Engine strength set to ${event.target.selectedOptions[0].text}.`);
 };
 
 $("resume").onclick = computerMove;

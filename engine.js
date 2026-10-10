@@ -73,11 +73,13 @@
     return this.ready;
   }
 
-  analyze(moves = [], onlyMove = null) {
+  analyze(moves = [], onlyMove = null, skill = 10) {
     const run = async () => {
       await this.init();
       const variations = new Map();
 
+      this.send(`setoption name Skill Level value ${skill}`);
+      await this.wait("isready", line => line === "readyok");
       this.send(`setoption name MultiPV value ${onlyMove ? 1 : 2}`);
       this.send(
         "position startpos" +

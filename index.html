@@ -85,6 +85,8 @@
     .square.dark { background:var(--dark) }
     .square:hover:not(:disabled) { background:#c6ce8b }
     .square.selected { box-shadow:inset 0 0 0 5px #f2cd55 }
+    .square[draggable="true"] { cursor:grab }
+    .square[draggable="true"]:active { cursor:grabbing }
     .square.last { background:#c3cb70 }
     .square.target::after {
       content:""; position:absolute; width:25%; height:25%;
@@ -170,7 +172,7 @@
     <header>
       <div>
         <h1>Every move is a lesson.</h1>
-        <div class="muted">Play thoughtfully. Review the possibilities.</div>
+        <div class="muted">Drag a piece or tap two squares. Review every move.</div>
       </div>
       <span class="status-pill" id="offline">Preparing offline files…</span>
     </header>
@@ -203,6 +205,15 @@
             <select id="mode">
               <option value="computer">Play computer · White</option>
               <option value="local">Local two-player</option>
+            </select>
+          </label>
+          <label>Engine strength
+            <select id="skill" aria-label="Engine strength">
+              <option value="2">Gentle</option>
+              <option value="6">Easy</option>
+              <option value="10">Club</option>
+              <option value="15">Strong</option>
+              <option value="20">Full strength</option>
             </select>
           </label>
           <button id="resume">Computer move / retry</button>
