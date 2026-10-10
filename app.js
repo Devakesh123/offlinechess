@@ -5,9 +5,23 @@ const $ = id => document.getElementById(id);
 const engine = new Engine();
 const INITIAL = new Chess().fen();
 const STORAGE = "knightlab.game.v1";
+const boardThemes = new Set(["classic", "slate", "ocean", "wood", "lavender"]);
+const pieceThemes = new Set(["classic", "ruby", "ocean", "gold"]);
+const pieceStyles = new Set(["classic", "outline", "studio"]);
 
-const glyphs = {
+const filledGlyphs = {
   k: "♚", q: "♛", r: "♜", b: "♝", n: "♞", p: "♟",
+};
+const outlineGlyphs = {
+  k: "♔", q: "♕", r: "♖", b: "♗", n: "♘", p: "♙",
+};
+const studioIcons = {
+  k: "M44 7h12v12h12v12H56v12H44V31H32V19h12z M25 50h50l-7 24H32z M18 81h64v9H18z",
+  q: "M20 34 35 45 50 15 65 45 80 34 73 57H27z M31 62h38l-7 13H38z M18 81h64v9H18z",
+  r: "M23 20h12v11h10V20h10v11h10V20h12v20H23z M28 44h44v30H28z M18 81h64v9H18z",
+  b: "M50 12c-14 13-19 23-16 34 2 7 8 12 16 16 8-4 14-9 16-16 3-11-2-21-16-34z M34 64h32l6 10H28z M18 81h64v9H18z",
+  n: "M20 81h62v9H20z M26 77c4-13 8-24 12-35-1-12 7-22 20-27l-4-9 19 9 13 16-12 18-21-8-8 19 13 17z",
+  p: "M50 13a15 15 0 1 0 0 30 15 15 0 0 0 0-30z M38 48h24l12 26H26z M18 81h64v9H18z",
 };
 const pieceNames = {
   k: "king", q: "queen", r: "rook", b: "bishop", n: "knight", p: "pawn",
@@ -55,6 +69,9 @@ let resigned = null;
 let mode = "computer";
 let skill = 10;
 let draggedSquare = null;
+let boardTheme = "classic";
+let pieceTheme = "classic";
+let pieceStyle = "classic";
 
 function notice(message = "") {
   $("notice").textContent = message;
@@ -236,6 +253,7 @@ function writeSave(announce = false) {
   try {
     localStorage.setItem(STORAGE, JSON.stringify({
       version: 1, records, flipped, mode, resigned, skill,
+      boardTheme, pieceTheme, pieceStyle,
     }));
     if (announce) notice("Game saved on this device.");
   } catch {
@@ -270,6 +288,9 @@ function restore() {
     mode = saved.mode === "local" ? "local" : "computer";
     skill = Number.isInteger(saved.skill) && saved.skill >= 0 && saved.skill <= 20
       ? saved.skill : 10;
+    boardTheme = boardThemes.has(saved.boardTheme) ? saved.boardTheme : "classic";
+    pieceTheme = pieceThemes.has(saved.pieceTheme) ? saved.pieceTheme : "classic";
+    pieceStyle = pieceStyles.has(saved.pieceStyle) ? saved.pieceStyle : "classic";
     resigned = ["w", "b"].includes(saved.resigned) ? saved.resigned : null;
   } catch {
     notice("The saved game could not be restored. A new board is ready.");
@@ -332,6 +353,10 @@ function renderBoard() {
     : [];
   const last = cursor ? records[cursor - 1].uci : "";
   const board = $("board");
+  const boardwrap = $("boardwrap");
+  boardwrap.dataset.boardTheme = boardTheme;
+  boardwrap.dataset.pieceTheme = pieceTheme;
+  boardwrap.dataset.pieceStyle = pieceStyle;
   const focus = document.activeElement?.dataset.square;
   board.replaceChildren();
 
@@ -361,8 +386,30 @@ function renderBoard() {
 
       if (piece) {
         const span = document.createElement("span");
-        span.className = `piece ${piece.color === "w" ? "white" : "black"}`;
-        span.textContent = glyphs[piece.type];
+        span.className = `piece ${piece.color === "w" ? "white" : "black"}`
+          + (pieceStyle === "studio" ? " studio" : "");
+        if (pieceStyle === "studio") {
+          const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+          const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+          svg.setAttribute("viewBox", "0 0 100 100");
+          svg.setAttribute("aria-hidden", "true");
+          path.setAttribute("d", studioIcons[piece.type]);
+          svg.append(path);
+          if (piece.type === "q") {
+            for (const [cx, cy] of [[20, 30], [50, 11], [80, 30]]) {
+              const dot = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+              dot.setAttribute("cx", cx);
+              dot.setAttribute("cy", cy);
+              dot.setAttribute("r", 5);
+              svg.append(dot);
+            }
+          }
+          span.append(svg);
+        } else {
+          span.textContent = pieceStyle === "outline"
+            ? outlineGlyphs[piece.type]
+            : filledGlyphs[piece.type];
+        }
         button.append(span);
       }
 
@@ -482,6 +529,9 @@ function render() {
   $("ply").textContent = `${cursor} / ${records.length} ply`;
   $("mode").value = mode;
   $("skill").value = String(skill);
+  $("boardTheme").value = boardTheme;
+  $("pieceTheme").value = pieceTheme;
+  $("pieceStyle").value = pieceStyle;
   $("engineState").textContent = busy ? "Analyzing…" : "Local engine";
 
   const opening = records.slice(0, cursor).reverse()
@@ -737,6 +787,24 @@ $("skill").onchange = event => {
   skill = Number(event.target.value);
   writeSave();
   notice(`Engine strength set to ${event.target.selectedOptions[0].text}.`);
+};
+
+$("boardTheme").onchange = event => {
+  boardTheme = boardThemes.has(event.target.value) ? event.target.value : "classic";
+  writeSave();
+  renderBoard();
+};
+
+$("pieceTheme").onchange = event => {
+  pieceTheme = pieceThemes.has(event.target.value) ? event.target.value : "classic";
+  writeSave();
+  renderBoard();
+};
+
+$("pieceStyle").onchange = event => {
+  pieceStyle = pieceStyles.has(event.target.value) ? event.target.value : "classic";
+  writeSave();
+  renderBoard();
 };
 
 $("resume").onclick = computerMove;

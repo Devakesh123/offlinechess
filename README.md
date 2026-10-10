@@ -10,6 +10,7 @@ Knightlab is a browser based chess app that runs on the device. Play against a l
 
 - Play chess against Stockfish or in local two player mode.
 - Choose an engine strength, from Gentle to Full strength.
+- Personalize the board with five square palettes, four piece color styles, and three piece icon sets.
 - Move by dragging a piece or selecting its source and destination squares.
 - See legal move targets, check status, move history, opening matches, and engine based move grades.
 - Ask for a move idea, destination hint, or best move arrow.

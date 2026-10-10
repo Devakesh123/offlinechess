@@ -73,17 +73,50 @@
     .boardwrap {
       position:relative; aspect-ratio:1; border-radius:5px;
       overflow:hidden; box-shadow:0 14px 40px #0004;
+      --board-light:#e9e6ce; --board-dark:#77945b; --board-hover:#c6ce8b;
+      --board-light-ink:#3c382c; --board-dark-ink:#f3f6e9;
+      --piece-white:#fff9e8; --piece-black:#20271e;
+      --piece-white-shadow:#25291f; --piece-black-shadow:#ffffff55;
+      transition:background-color .25s ease;
+    }
+    .boardwrap[data-board-theme="slate"] {
+      --board-light:#dbe2ea; --board-dark:#627286; --board-hover:#c2cedb;
+      --board-light-ink:#28333f; --board-dark-ink:#f6f8fc;
+    }
+    .boardwrap[data-board-theme="ocean"] {
+      --board-light:#d9eceb; --board-dark:#39828d; --board-hover:#b8dddc;
+      --board-light-ink:#233d3f; --board-dark-ink:#f4ffff;
+    }
+    .boardwrap[data-board-theme="wood"] {
+      --board-light:#f0d9b5; --board-dark:#a66b43; --board-hover:#dfbd8e;
+      --board-light-ink:#4a3322; --board-dark-ink:#fff3e3;
+    }
+    .boardwrap[data-board-theme="lavender"] {
+      --board-light:#eee4f6; --board-dark:#8769a4; --board-hover:#ddccef;
+      --board-light-ink:#443550; --board-dark-ink:#fff8ff;
+    }
+    .boardwrap[data-piece-theme="ruby"] {
+      --piece-white:#fff1f2; --piece-black:#922b49;
+      --piece-white-shadow:#3a1d26; --piece-black-shadow:#fff5f7aa;
+    }
+    .boardwrap[data-piece-theme="ocean"] {
+      --piece-white:#effbff; --piece-black:#285c77;
+      --piece-white-shadow:#183746; --piece-black-shadow:#f4fcffbb;
+    }
+    .boardwrap[data-piece-theme="gold"] {
+      --piece-white:#fff4cf; --piece-black:#735219;
+      --piece-white-shadow:#493819; --piece-black-shadow:#fff9e5bb;
     }
     #board { display:grid; grid-template-columns:repeat(8,1fr); height:100% }
     .square {
       position:relative; display:grid; place-items:center;
       border:0; border-radius:0; padding:0; min-width:0;
-      background:var(--light); color:#222;
+      background:var(--board-light); color:var(--board-light-ink);
       font-size:clamp(26px,4.6vw,60px); line-height:1;
       aspect-ratio:1; touch-action:manipulation;
     }
-    .square.dark { background:var(--dark) }
-    .square:hover:not(:disabled) { background:#c6ce8b }
+    .square.dark { background:var(--board-dark); color:var(--board-dark-ink) }
+    .square:hover:not(:disabled) { background:var(--board-hover) }
     .square.selected { box-shadow:inset 0 0 0 5px #f2cd55 }
     .square[draggable="true"] { cursor:grab }
     .square[draggable="true"]:active { cursor:grabbing }
@@ -97,8 +130,18 @@
       font-family:"DejaVu Sans","Segoe UI Symbol","Arial Unicode MS",serif;
       position:relative; z-index:1; pointer-events:none;
     }
-    .piece.white { color:#fff9e8; text-shadow:0 2px 2px #25291f,1px 0 #25291f }
-    .piece.black { color:#20271e; text-shadow:0 1px 1px #ffffff55 }
+    .piece.white {
+      color:var(--piece-white);
+      text-shadow:0 2px 2px var(--piece-white-shadow),1px 0 var(--piece-white-shadow);
+      transition:color .2s ease;
+    }
+    .piece.black {
+      color:var(--piece-black); text-shadow:0 1px 1px var(--piece-black-shadow);
+      transition:color .2s ease;
+    }
+    .piece.studio { width:1em; height:1em; display:grid; place-items:center }
+    .piece.studio svg { width:100%; height:100%; overflow:visible; filter:drop-shadow(0 2px 1px #0005) }
+    .piece.studio path, .piece.studio circle { fill:currentColor }
     .coord {
       position:absolute; left:4px; top:3px;
       font-size:10px; font-weight:700; opacity:.75; pointer-events:none;
@@ -183,7 +226,7 @@
           <div><strong id="topName">Black · Stockfish</strong>
             <small id="state">Starting engine…</small></div>
         </div>
-        <div class="boardwrap">
+        <div id="boardwrap" class="boardwrap" aria-label="Chess board">
           <div id="board" role="group" aria-label="Chessboard"></div>
           <svg id="arrows" viewBox="0 0 800 800" aria-hidden="true"></svg>
         </div>
@@ -214,6 +257,30 @@
               <option value="10">Club</option>
               <option value="15">Strong</option>
               <option value="20">Full strength</option>
+            </select>
+          </label>
+          <label>Board
+            <select id="boardTheme" aria-label="Board color theme">
+              <option value="classic">Classic green</option>
+              <option value="slate">Slate</option>
+              <option value="ocean">Ocean</option>
+              <option value="wood">Warm wood</option>
+              <option value="lavender">Lavender</option>
+            </select>
+          </label>
+          <label>Piece colors
+            <select id="pieceTheme" aria-label="Chess piece color theme">
+              <option value="classic">Classic</option>
+              <option value="ruby">Ruby</option>
+              <option value="ocean">Ocean</option>
+              <option value="gold">Gold</option>
+            </select>
+          </label>
+          <label>Piece style
+            <select id="pieceStyle" aria-label="Chess piece icon style">
+              <option value="classic">Classic filled</option>
+              <option value="outline">Outline</option>
+              <option value="studio">Studio icons</option>
             </select>
           </label>
           <button id="resume">Computer move / retry</button>

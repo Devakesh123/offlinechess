@@ -1,4 +1,4 @@
-const CACHE = "knightlab-v3";
+const CACHE = "knightlab-v5";
 
 const FILES = [
   "./",
